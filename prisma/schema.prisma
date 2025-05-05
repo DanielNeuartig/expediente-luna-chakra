@@ -1,34 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model Usuario {
   id              Int              @id @default(autoincrement())
-  correo          String           @unique
-  contraseña      String
-  rol             Rol              @default(MEDICO)
+  correo          String           @unique                       // ✅ Usado como identificador principal de login
+  contraseña      String                                          // ✅ Validar longitud segura
+  rol             Rol              @default(MEDICO)              // ✅ Validar que esté dentro del enum
   creadoEn        DateTime         @default(now())
   ultimaConexion  DateTime?
-  activo          Boolean          @default(true) // ✅ Para desactivar usuario sin eliminarlo
+  activo          Boolean          @default(true)                // ✅ Para suspender el acceso
+  verificadoEmail Boolean          @default(false)               // ✅ Confirmación del correo electrónico
 
-  propietarios    Propietario[]    // Si este usuario es también propietario
-  usuarioClinicas UsuarioClinica[] // Relación muchos a muchos con clínicas
-  mascotasCreadas Mascota[]        @relation("MascotasCreadas")
-  visitasCreadas  Visita[]         @relation("VisitasCreadas")
+  propietario     Propietario?     @relation(fields: [propietarioId], references: [id])
+  propietarioId   Int?             @unique                    // ✅ Cada usuario puede tener a lo sumo un propietario asociado
+
+  usuarioClinicas UsuarioClinica[]                               // Relación muchos a muchos con clínicas
+  accesos         Acceso[]                                       // ✅ Historial de accesos
 }
 
 model Propietario {
-  id          Int        @id @default(autoincrement())
-  nombre      String
-  creadoEn    DateTime   @default(now())
-  usuarioId   Int?       
-  usuario     Usuario?   @relation(fields: [usuarioId], references: [id])
-  mascotas    Mascota[]
-  telefonos   Telefono[] // ✅ Relación con múltiples teléfonos
-}
+  id                  Int      @id @default(autoincrement())
+  nombre              String                                   // ✅ Validar: al menos dos palabras y capitalizar
+  creadoEn            DateTime @default(now())
 
-model Telefono {
-  id            Int         @id @default(autoincrement())
-  numero        String      // Validar longitud y formato
-  esPrincipal   Boolean     @default(false) // ✅ Indica si es el principal
-  propietarioId Int
-  propietario   Propietario @relation(fields: [propietarioId], references: [id])
+  telefonoPrincipal   String                                   // ✅ Obligatorio
+  telefonoSecundario1 String?                                  // ✅ Opcional
+  telefonoSecundario2 String?                                  // ✅ Opcional
+
+ usuario             Usuario?
+  usuarioId           Int?     @unique                         // ✅ Solo si el propietario tiene acceso como usuario
 }
 
 model Clinica {
@@ -36,13 +43,10 @@ model Clinica {
   nombre          String
   direccion       String
   telefono        String
-  tipo            String?          // ✅ Tipo de clínica, opcional
-  activo          Boolean          @default(true) // ✅ Activa o no
+  tipo            String                                      // ✅ Clínica general, urgencias, etc. (podría ser enum más adelante)
   creadoEn        DateTime         @default(now())
 
-  usuarioClinicas UsuarioClinica[]
-  mascotas        Mascota[]
-  visitas         Visita[]
+  usuarioClinicas UsuarioClinica[]                             // Relación con usuarios
 }
 
 model UsuarioClinica {
@@ -53,7 +57,15 @@ model UsuarioClinica {
   usuario    Usuario @relation(fields: [usuarioId], references: [id])
   clinica    Clinica @relation(fields: [clinicaId], references: [id])
 
-  @@unique([usuarioId, clinicaId])
+  @@unique([usuarioId, clinicaId]) // ✅ Evita duplicados
+}
+
+model Acceso {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int
+  ip         String
+  fecha      DateTime @default(now())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
 }
 
 enum Rol {
