@@ -1,0 +1,65 @@
+model Usuario {
+  id              Int              @id @default(autoincrement())
+  correo          String           @unique
+  contraseña      String
+  rol             Rol              @default(MEDICO)
+  creadoEn        DateTime         @default(now())
+  ultimaConexion  DateTime?
+  activo          Boolean          @default(true) // ✅ Para desactivar usuario sin eliminarlo
+
+  propietarios    Propietario[]    // Si este usuario es también propietario
+  usuarioClinicas UsuarioClinica[] // Relación muchos a muchos con clínicas
+  mascotasCreadas Mascota[]        @relation("MascotasCreadas")
+  visitasCreadas  Visita[]         @relation("VisitasCreadas")
+}
+
+model Propietario {
+  id          Int        @id @default(autoincrement())
+  nombre      String
+  creadoEn    DateTime   @default(now())
+  usuarioId   Int?       
+  usuario     Usuario?   @relation(fields: [usuarioId], references: [id])
+  mascotas    Mascota[]
+  telefonos   Telefono[] // ✅ Relación con múltiples teléfonos
+}
+
+model Telefono {
+  id            Int         @id @default(autoincrement())
+  numero        String      // Validar longitud y formato
+  esPrincipal   Boolean     @default(false) // ✅ Indica si es el principal
+  propietarioId Int
+  propietario   Propietario @relation(fields: [propietarioId], references: [id])
+}
+
+model Clinica {
+  id              Int              @id @default(autoincrement())
+  nombre          String
+  direccion       String
+  telefono        String
+  tipo            String?          // ✅ Tipo de clínica, opcional
+  activo          Boolean          @default(true) // ✅ Activa o no
+  creadoEn        DateTime         @default(now())
+
+  usuarioClinicas UsuarioClinica[]
+  mascotas        Mascota[]
+  visitas         Visita[]
+}
+
+model UsuarioClinica {
+  id         Int     @id @default(autoincrement())
+  usuarioId  Int
+  clinicaId  Int
+
+  usuario    Usuario @relation(fields: [usuarioId], references: [id])
+  clinica    Clinica @relation(fields: [clinicaId], references: [id])
+
+  @@unique([usuarioId, clinicaId])
+}
+
+enum Rol {
+  CEO
+  ADMIN
+  MEDICO
+  AUXILIAR
+  PROPIETARIO
+}
