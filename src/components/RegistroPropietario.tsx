@@ -13,7 +13,7 @@ import { toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/context/AuthContext'
 
 export default function RegistroPropietario() {
-  const { usuario } = useAuth()
+  const { usuario, logout } = useAuth()
   const [nombre, setNombre] = useState('')
   const [telefonoPrincipal, setTelefonoPrincipal] = useState('')
   const [telefonoSecundario1, setTelefonoSecundario1] = useState('')
@@ -133,6 +133,15 @@ export default function RegistroPropietario() {
         >
           Concluir registro
         </Button>
+        <Button
+  colorScheme="red"
+  variant="outline"
+  onClick={logout}
+  disabled={cargando}
+  w="full"
+>
+  Cerrar sesión
+</Button>
       </VStack>
     </Box>
   )

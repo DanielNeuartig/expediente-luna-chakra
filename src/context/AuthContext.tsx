@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(data.token)
     const decoded = jwt.decode(data.token) as { exp: number }
     const expiraEn = decoded?.exp ? decoded.exp * 1000 : Date.now() + 86400000
-
+    console.log('Usuario que se guardará en localStorage:', data.usuario)
     localStorage.setItem(
       'auth',
       JSON.stringify({
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       })
     )
 
-    if (data.usuario.propietarioId == null) {
+    if ('propietarioId' in data.usuario && data.usuario.propietarioId == null) {
       router.replace('/registro-propietario')
     }
   }
@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('auth')
     setUsuario(null)
     setToken(null)
+    router.replace('/') 
   }
 
   const refrescarUsuario = async () => {

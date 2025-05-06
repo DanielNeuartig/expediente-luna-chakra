@@ -12,6 +12,8 @@ export async function GET(req: Request) {
       usuario: {
         id: usuario.id,
         rol: usuario.rol,
+        correo: usuario.correo,
+        propietarioId: usuario.propietarioId,
       },
     })
   } catch (err: any) {

@@ -55,9 +55,7 @@ export async function POST(req: Request) {
       },
     })
 
-    // Si es PROPIETARIO pero no tiene propietarioId → requiere completar perfil
-    const requiereRegistroPropietario =
-      usuario.rol === 'PROPIETARIO' && usuario.propietarioId === null
+
 
     const token = jwt.sign(
       { id: usuario.id, rol: usuario.rol },
@@ -71,8 +69,7 @@ export async function POST(req: Request) {
         id: usuario.id,
         rol: usuario.rol,
         propietarioId: usuario.propietarioId,
-        correo: usuario.correo, 
-        requiereRegistroPropietario,
+        correo: usuario.correo,
       },
     })
   } catch (error) {
