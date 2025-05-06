@@ -9,64 +9,82 @@ datasource db {
 }
 
 model Usuario {
-  id              Int              @id @default(autoincrement())
-  correo          String           @unique                       // ✅ Usado como identificador principal de login
-  contraseña      String                                          // ✅ Validar longitud segura
-  rol             Rol              @default(MEDICO)              // ✅ Validar que esté dentro del enum
-  creadoEn        DateTime         @default(now())
+  id              Int       @id @default(autoincrement())
+  correo          String    @unique // ✅ Usado como identificador principal de login
+  contraseña     String // ✅ Validar longitud segura
+  rol             Rol       @default(MEDICO) // ✅ Validar que esté dentro del enum
+  creadoEn        DateTime  @default(now())
   ultimaConexion  DateTime?
-  activo          Boolean          @default(true)                // ✅ Para suspender el acceso
-  verificadoEmail Boolean          @default(false)               // ✅ Confirmación del correo electrónico
+  activo          Boolean   @default(true) // ✅ Para suspender el acceso
+  verificadoEmail Boolean   @default(false) // ✅ Confirmación del correo electrónico
 
-  propietario     Propietario?     @relation(fields: [propietarioId], references: [id])
-  propietarioId   Int?             @unique                    // ✅ Cada usuario puede tener a lo sumo un propietario asociado
+  propietario   Propietario? @relation(fields: [propietarioId], references: [id])
+  propietarioId Int?         @unique // ✅ Cada usuario puede tener a lo sumo un propietario asociado
 
-  usuarioClinicas UsuarioClinica[]                               // Relación muchos a muchos con clínicas
-  accesos         Acceso[]                                       // ✅ Historial de accesos
+  usuarioClinicas UsuarioClinica[] // Relación muchos a muchos con clínicas
+  accesos         Acceso[] // ✅ Historial de accesos
+
+  // modelo Usuario
+verificacionesSMS VerificacionSMS[]
 }
 
 model Propietario {
-  id                  Int      @id @default(autoincrement())
-  nombre              String                                   // ✅ Validar: al menos dos palabras y capitalizar
-  creadoEn            DateTime @default(now())
+  id       Int      @id @default(autoincrement())
+  nombre   String // ✅ Validar: al menos dos palabras y capitalizar
+  creadoEn DateTime @default(now())
 
-  telefonoPrincipal   String                                   // ✅ Obligatorio
-  telefonoSecundario1 String?                                  // ✅ Opcional
-  telefonoSecundario2 String?                                  // ✅ Opcional
+  telefonoPrincipal   String // ✅ Obligatorio
+  telefonoSecundario1 String? // ✅ Opcional
+  telefonoSecundario2 String? // ✅ Opcional
 
- usuario             Usuario?
-  usuarioId           Int?     @unique                         // ✅ Solo si el propietario tiene acceso como usuario
+  usuario   Usuario?
+  usuarioId Int?     @unique // ✅ Solo si el propietario tiene acceso como usuario
 }
 
 model Clinica {
-  id              Int              @id @default(autoincrement())
-  nombre          String
-  direccion       String
-  telefono        String
-  tipo            String                                      // ✅ Clínica general, urgencias, etc. (podría ser enum más adelante)
-  creadoEn        DateTime         @default(now())
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  direccion String
+  telefono  String
+  tipo      String // ✅ Clínica general, urgencias, etc. (podría ser enum más adelante)
+  creadoEn  DateTime @default(now())
 
-  usuarioClinicas UsuarioClinica[]                             // Relación con usuarios
+  usuarioClinicas UsuarioClinica[] // Relación con usuarios
+}
+
+model VerificacionSMS {
+  id         Int      @id @default(autoincrement())
+  telefono   String
+  codigo     String
+  usado      Boolean  @default(false)
+  creadoEn   DateTime @default(now())
+  expiradoEn DateTime
+  usuarioId  Int
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([telefono, creadoEn])
 }
 
 model UsuarioClinica {
-  id         Int     @id @default(autoincrement())
-  usuarioId  Int
-  clinicaId  Int
+  id        Int @id @default(autoincrement())
+  usuarioId Int
+  clinicaId Int
 
-  usuario    Usuario @relation(fields: [usuarioId], references: [id])
-  clinica    Clinica @relation(fields: [clinicaId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
 
   @@unique([usuarioId, clinicaId]) // ✅ Evita duplicados
 }
 
 model Acceso {
-  id         Int      @id @default(autoincrement())
-  usuarioId  Int
-  ip         String
-  fecha      DateTime @default(now())
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  ip        String
+  fecha     DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
 }
+
+
 
 enum Rol {
   CEO
@@ -75,3 +93,4 @@ enum Rol {
   AUXILIAR
   PROPIETARIO
 }
+
