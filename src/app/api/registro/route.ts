@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { validarEmail, MENSAJES } from '@/lib/validadores'
-
 import { ROLES_PERMITIDOS } from '@/lib/constantes'
 
 export async function POST(req: Request) {
@@ -33,17 +32,29 @@ export async function POST(req: Request) {
 
     const hash = await bcrypt.hash(contrasena, 10)
 
-    const nuevo = await prisma.usuario.create({
-      data: {
-        correo,
-        contraseña: hash,
-        rol,
-        activo: true,
-      },
-    })
+    // Registrar IP del acceso
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      'IP_DESCONOCIDA'
 
-    return NextResponse.json({ mensaje: MENSAJES.registroExitoso, usuarioId: nuevo.id })
-} catch (error) {
+      const nuevoUsuario = await prisma.usuario.create({
+        data: {
+          correo,
+          contraseña: hash,
+          rol,
+          activo: true,
+          accesos: {
+            create: {
+              ip: ip.toString(),
+              tipoAcceso: 'REGISTRO',
+            },
+          },
+        },
+      })
+
+    return NextResponse.json({ mensaje: MENSAJES.registroExitoso, usuarioId: nuevoUsuario.id })
+  } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Error en /api/registro:', error)
     }

@@ -48,14 +48,13 @@ export async function POST(req: Request) {
       req.headers.get('x-real-ip') ||
       'IP_DESCONOCIDA'
 
-    await prisma.acceso.create({
-      data: {
-        usuarioId: usuario.id,
-        ip: ip.toString(),
-      },
-    })
-
-
+      await prisma.acceso.create({
+        data: {
+          usuarioId: usuario.id,
+          ip: ip.toString(),
+          tipoAcceso: 'LOGIN',
+        },
+      })
 
     const token = jwt.sign(
       { id: usuario.id, rol: usuario.rol },

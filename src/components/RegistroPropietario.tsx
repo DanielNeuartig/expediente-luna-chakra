@@ -2,15 +2,26 @@
 
 import {
   Box,
+  createListCollection,
+  Portal,
   Button,
+  NativeSelect,
   Input,
   Text,
   VStack,
+  Select,
   Separator,
+  HStack,
+  InputGroup,
+  InputAddon
 } from '@chakra-ui/react'
 import { useState } from 'react'
 import { toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/context/AuthContext'
+
+const ladaCollection = createListCollection({
+  items: [{ label: '+52', value: 'mx' }],
+})
 
 export default function RegistroPropietario() {
   const { usuario, logout } = useAuth()
@@ -18,6 +29,10 @@ export default function RegistroPropietario() {
   const [telefonoPrincipal, setTelefonoPrincipal] = useState('')
   const [telefonoSecundario1, setTelefonoSecundario1] = useState('')
   const [telefonoSecundario2, setTelefonoSecundario2] = useState('')
+  const [codigo, setCodigo] = useState('')
+  const [codigoVerificado, setCodigoVerificado] = useState(false)
+  const [enviandoCodigo, setEnviandoCodigo] = useState(false)
+  const [verificando, setVerificando] = useState(false)
   const [cargando, setCargando] = useState(false)
 
   const formatearNombre = (valor: string) =>
@@ -32,14 +47,73 @@ export default function RegistroPropietario() {
   const validarTelefono = (tel: string) =>
     tel === '' || tel.replace(/\D/g, '').length === 10
 
+  const telefonoConPrefijo = () => {
+    const limpio = telefonoPrincipal.replace(/\D/g, '')
+    return `+52${limpio}`
+  }
+
+  const enviarCodigo = async () => {
+    const tel = telefonoConPrefijo()
+    if (!/^\+52\d{10}$/.test(tel)) {
+      toaster.create({ description: 'Número inválido para enviar SMS', type: 'error' })
+      return
+    }
+    setEnviandoCodigo(true)
+    try {
+      const res = await fetch('/api/sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : ''}`,
+        },
+        body: JSON.stringify({ telefono: tel }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al enviar código')
+      toaster.create({ description: 'Código enviado por SMS', type: 'success' })
+    } catch (error: any) {
+      toaster.create({ description: error.message, type: 'error' })
+    } finally {
+      setEnviandoCodigo(false)
+    }
+  }
+
+  const verificarCodigo = async () => {
+    setVerificando(true)
+    try {
+      const res = await fetch('/api/sms/verificar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : ''}`,
+        },
+        body: JSON.stringify({ telefono: telefonoConPrefijo(), codigo }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Código incorrecto')
+      toaster.create({ description: 'Teléfono verificado', type: 'success' })
+      setCodigoVerificado(true)
+    } catch (error: any) {
+      toaster.create({ description: error.message, type: 'error' })
+    } finally {
+      setVerificando(false)
+    }
+  }
+
   const handleSubmit = async () => {
+    const palabras = nombre.trim().split(/\s+/)
     if (
-      !nombre.trim() ||
+      palabras.length < 2 ||
       !validarTelefono(telefonoPrincipal) ||
       !validarTelefono(telefonoSecundario1) ||
       !validarTelefono(telefonoSecundario2)
     ) {
-      toaster.create({ description: 'Verifica los campos antes de continuar', type: 'error' })
+      toaster.create({ description: 'Verifica que el nombre tenga al menos dos palabras y que los teléfonos sean válidos', type: 'error' })
+      return
+    }
+
+    if (!codigoVerificado) {
+      toaster.create({ description: 'Debes verificar tu teléfono principal antes de continuar', type: 'error' })
       return
     }
 
@@ -66,6 +140,8 @@ export default function RegistroPropietario() {
       setTelefonoPrincipal('')
       setTelefonoSecundario1('')
       setTelefonoSecundario2('')
+      setCodigo('')
+      setCodigoVerificado(false)
     } catch (error: any) {
       toaster.create({ description: error.message, type: 'error' })
     } finally {
@@ -86,7 +162,7 @@ export default function RegistroPropietario() {
           </Text>
         </Box>
 
-        <Box w="full">
+        <Box>
           <Text mb={1}>Nombre completo</Text>
           <Input
             value={nombre}
@@ -96,16 +172,45 @@ export default function RegistroPropietario() {
           />
         </Box>
 
-        <Box w="full">
-          <Text mb={1}>Teléfono principal</Text>
-          <Input
-            value={telefonoPrincipal}
-            onChange={(e) => setTelefonoPrincipal(formatearTelefono(e.target.value))}
-            placeholder="33 33 33 33 33"
-          />
+        <Box>
+  <Text mb={1}>Teléfono principal</Text>
+  <HStack align="start">
+    <InputGroup /*size="md"*/ flex="1" startAddon="+52">
+      <Input
+        value={telefonoPrincipal}
+        onChange={(e) => {
+          setTelefonoPrincipal(formatearTelefono(e.target.value))
+          setCodigoVerificado(false)
+        }}
+        placeholder="33 33 33 33 33"
+      />
+    </InputGroup>
+    <Button
+      size="sm"
+      onClick={enviarCodigo}
+      loading={enviandoCodigo}
+      disabled={enviandoCodigo}
+    >
+      Enviar código
+    </Button>
+  </HStack>
+</Box>
+        <Box>
+          <Text mb={1}>Código de verificación</Text>
+          <HStack>
+            <Input
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              placeholder="123456"
+              disabled={codigoVerificado}
+            />
+            <Button size="sm" onClick={verificarCodigo} loading={verificando} disabled={verificando || codigoVerificado}>
+              Verificar
+            </Button>
+          </HStack>
         </Box>
 
-        <Box w="full">
+        <Box>
           <Text mb={1}>Teléfono secundario 1 (opcional)</Text>
           <Input
             value={telefonoSecundario1}
@@ -114,7 +219,7 @@ export default function RegistroPropietario() {
           />
         </Box>
 
-        <Box w="full">
+        <Box>
           <Text mb={1}>Teléfono secundario 2 (opcional)</Text>
           <Input
             value={telefonoSecundario2}
@@ -133,15 +238,16 @@ export default function RegistroPropietario() {
         >
           Concluir registro
         </Button>
+
         <Button
-  colorScheme="red"
-  variant="outline"
-  onClick={logout}
-  disabled={cargando}
-  w="full"
->
-  Cerrar sesión
-</Button>
+          colorScheme="red"
+          variant="outline"
+          onClick={logout}
+          disabled={cargando}
+          w="full"
+        >
+          Cerrar sesión
+        </Button>
       </VStack>
     </Box>
   )
