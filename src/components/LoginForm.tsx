@@ -80,19 +80,20 @@ export default function LoginForm() {
       await login(identificador, contrasena)
       toaster.create({ description: MENSAJES.inicioSesionExitoso, type: 'success' })
       router.push('/dashboard')
-    } catch (err: any) {
-      setShake(true)
-      setTimeout(() => setShake(false), 600)
+    } catch (err: unknown) {
+  setShake(true)
+  setTimeout(() => setShake(false), 600)
 
-      const esErrorDeRed = err instanceof TypeError && err.message === 'Failed to fetch'
-      const mensaje = esErrorDeRed
-        ? MENSAJES.errorConexion
-        : Object.values(MENSAJES).includes(err.message)
-          ? err.message
-          : MENSAJES.errorInterno
+  let mensaje = MENSAJES.errorInterno
 
-      toaster.create({ description: mensaje, type: 'error' })
-    } finally {
+  if (err instanceof TypeError && err.message === 'Failed to fetch') {
+    mensaje = MENSAJES.errorConexion
+  } else if (err instanceof Error && Object.values(MENSAJES).includes(err.message)) {
+    mensaje = err.message
+  }
+
+  toaster.create({ description: mensaje, type: 'error' })
+} finally {
       setCargando(false)
     }
   }

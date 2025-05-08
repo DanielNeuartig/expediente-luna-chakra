@@ -13,7 +13,7 @@ import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { toaster } from '@/components/ui/toaster'
 import { MENSAJES, validarEmail } from '@/lib/validadores'
-import { useRouter } from 'next/navigation'
+//import { useRouter } from 'next/navigation'
 import InputCorreo from '@/components/InputCorreo'
 import InputContrasena from '@/components/InputContrasena'
 
@@ -32,7 +32,7 @@ export default function RegistroUsuarioForm() {
   const [rol, setRol] = useState<string>('')
   const [cargando, setCargando] = useState(false)
   const [shake, setShake] = useState(false)
-  const router = useRouter()
+  //const router = useRouter()
 
   const collection = useMemo(() => {
     return createListCollection({
@@ -109,12 +109,13 @@ export default function RegistroUsuarioForm() {
       setContrasena('')
       setConfirmar('')
       setRol('')
-    } catch (err: any) {
-      toaster.create({
-        description: err.message || MENSAJES.errorInterno,
-        type: 'error',
-      })
-    } finally {
+    } catch (err: unknown) {
+  const mensaje = err instanceof Error ? err.message : MENSAJES.errorInterno
+  toaster.create({
+    description: mensaje,
+    type: 'error',
+  })
+} finally {
       setCargando(false)
     }
   }

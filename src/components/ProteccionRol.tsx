@@ -34,6 +34,7 @@ export default function ProteccionRol({
   const { usuario, autenticado, refrescarUsuario } = useAuth()
   const router = useRouter()
   const [evaluando, setEvaluando] = useState(true)
+  const [sinPermiso, setSinPermiso] = useState(false)
   const toastMostrado = useRef(false)
 
   const tienePermiso = () => {
@@ -56,8 +57,6 @@ export default function ProteccionRol({
 
       if (autenticado) {
         await refrescarUsuario()
-
-        // Espera a que el usuario esté definido
         if (!usuario) return
 
         if (usuario.propietarioId == null) {
@@ -66,6 +65,11 @@ export default function ProteccionRol({
         }
 
         if (!tienePermiso()) {
+          if (uiDenegado) {
+            setSinPermiso(true)
+            return
+          }
+
           if (!toastMostrado.current) {
             toaster.create({
               description: 'No tienes permiso para acceder a esta sección.',
@@ -91,6 +95,10 @@ export default function ProteccionRol({
         <Spinner size="xl" />
       </Center>
     )
+  }
+
+  if (sinPermiso && uiDenegado) {
+    return <>{uiDenegado}</>
   }
 
   return <>{children}</>

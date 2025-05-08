@@ -30,9 +30,10 @@ export async function POST(req: Request) {
   let usuario
   try {
     usuario = await verificarTokenYRolEnDB(token)
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 401 })
-  }
+  } catch (err: unknown) {
+  const mensaje = err instanceof Error ? err.message : 'Error desconocido'
+  return NextResponse.json({ error: mensaje }, { status: 401 })
+}
 
   const {
     nombre,

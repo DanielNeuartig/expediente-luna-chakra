@@ -36,11 +36,12 @@ export async function GET(req: Request) {
         propietarioId: usuario.propietarioId,
       },
     })
-  } catch (err: any) {
-    const mensaje = err.message === 'USUARIO_NO_ENCONTRADO'
+  } catch (err: unknown) {
+  const mensaje =
+    err instanceof Error && err.message === 'USUARIO_NO_ENCONTRADO'
       ? MENSAJES.usuarioNoExiste
       : MENSAJES.tokenInvalido
 
-    return NextResponse.json({ error: mensaje }, { status: 401 })
-  }
+  return NextResponse.json({ error: mensaje }, { status: 401 })
+}
 }

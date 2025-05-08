@@ -32,12 +32,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: MENSAJES.tokenFaltante }, { status: 401 })
   }
 
-  let usuario
-  try {
-    usuario = await verificarTokenYRolEnDB(token)
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 401 })
-  }
+ let usuario
+try {
+  usuario = await verificarTokenYRolEnDB(token)
+} catch (err: unknown) {
+  const mensaje = err instanceof Error ? err.message : 'Error desconocido'
+  return NextResponse.json({ error: mensaje }, { status: 401 })
+}
 
   if (usuario.propietarioId) {
     return NextResponse.json({ error: MENSAJES.yaTienePropietario }, { status: 409 })
@@ -109,10 +110,14 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ success: true, sid: response.sid })
-  } catch (error: any) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('❌ Error al enviar SMS con Twilio:', error?.message)
-    }
-    return NextResponse.json({ error: MENSAJES.falloEnvioSMS }, { status: 500 })
+
+  } 
+  catch (error: unknown) {
+  if (process.env.NODE_ENV !== 'production') {
+    const mensaje = error instanceof Error ? error.message : 'Error desconocido'
+    console.error('❌ Error al enviar SMS con Twilio:', mensaje)
   }
+
+  return NextResponse.json({ error: MENSAJES.falloEnvioSMS }, { status: 500 })
+}
 }

@@ -80,11 +80,13 @@ export default function RegistroPropietario() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Error al enviar código")
       toaster.create({ description: "Código enviado por SMS", type: "success" })
-    } catch (error: any) {
-      setShake(true)
-      setTimeout(() => setShake(false), 600)
-      toaster.create({ description: error.message, type: "error" })
-    } finally {
+    } catch (error: unknown) {
+  setShake(true)
+  setTimeout(() => setShake(false), 600)
+
+  const mensaje = error instanceof Error ? error.message : 'Error desconocido'
+  toaster.create({ description: mensaje, type: 'error' })
+}finally {
       setEnviandoCodigo(false)
     }
   }
@@ -137,9 +139,10 @@ export default function RegistroPropietario() {
         setCodigo("")
         setExito(false)
       }, 600)
-    } catch (error: any) {
-      toaster.create({ description: error.message, type: "error" })
-    } finally {
+    } catch (error: unknown) {
+  const mensaje = error instanceof Error ? error.message : 'Error desconocido'
+  toaster.create({ description: mensaje, type: 'error' })
+}finally {
       setCargando(false)
     }
   }
