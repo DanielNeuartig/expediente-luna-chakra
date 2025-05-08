@@ -2,7 +2,7 @@
 
 import { HStack, Input } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import { formatearTelefonoVisual, esTelefonoValido } from '@/lib/validadores'
+import { formatearTelefonoVisual, /*esTelefonoValido */} from '@/lib/validadores'
 
 interface Props {
   clavePais: string

@@ -1,6 +1,6 @@
 'use client'
 import { Box, Text } from '@chakra-ui/react'
-import Image from "next/image";
+//import Image from "next/image";
 import LoginForm from '@/components/LoginForm'
 import RegistroUsuario from '@/components/RegistroUsuarioForm'
 import { useAuth } from '@/context/AuthContext'
