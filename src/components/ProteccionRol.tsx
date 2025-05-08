@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Center, Spinner } from '@chakra-ui/react'
 import { toaster } from '@/components/ui/toaster'
 
@@ -37,7 +37,7 @@ export default function ProteccionRol({
   const [sinPermiso, setSinPermiso] = useState(false)
   const toastMostrado = useRef(false)
 
-  const tienePermiso = () => {
+  const tienePermiso = useCallback(() => {
     if (!usuario) return false
     const rolUsuario = usuario.rol
     const nivelUsuario = jerarquia[rolUsuario as keyof typeof jerarquia] ?? -1
@@ -46,7 +46,7 @@ export default function ProteccionRol({
     if (minimo && nivelUsuario < jerarquia[minimo as keyof typeof jerarquia]) return false
 
     return true
-  }
+  }, [usuario, rolesPermitidos, minimo])
 
   useEffect(() => {
     const verificar = async () => {
@@ -87,7 +87,7 @@ export default function ProteccionRol({
     }
 
     verificar()
-  }, [autenticado])
+  }, [autenticado, refrescarUsuario, router, tienePermiso, publico, uiDenegado, usuario])
 
   if (evaluando) {
     return fallback || (
