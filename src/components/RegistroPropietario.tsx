@@ -10,6 +10,7 @@ import {
   HStack,
 } from "@chakra-ui/react"
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/context/AuthContext'
@@ -21,8 +22,11 @@ import {
 
 const MotionBox = motion(Box)
 
+
+
 export default function RegistroPropietario() {
-  const { usuario, logout } = useAuth()
+  const router = useRouter()
+  const { usuario, logout, refrescarUsuario } = useAuth()
   const [nombre, setNombre] = useState("")
   const [clavePais, setClavePais] = useState("+52")
   const [telefonoPrincipal, setTelefonoPrincipal] = useState("")
@@ -128,6 +132,8 @@ export default function RegistroPropietario() {
         throw new Error(data.error || "Error al registrar propietario")
 
       toaster.create({ description: "Registro exitoso", type: "success" })
+      await refrescarUsuario()
+router.push('/dashboard')
       setExito(true)
       setTimeout(() => {
         setNombre("")

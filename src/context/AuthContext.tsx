@@ -22,8 +22,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-
-
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -46,7 +44,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [])
 
-  // 🔒 Redirigir solo si está logueado y no tiene propietario
   useEffect(() => {
     if (!usuario) return
     if (usuario.propietarioId == null && pathname !== '/registro-propietario') {
@@ -58,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!token) return
     const intervalo = setInterval(() => {
       refrescarUsuario()
-    }, 60_000)
+    }, 60000)
     return () => clearInterval(intervalo)
   }, [token])
 
@@ -70,7 +67,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     })
 
     const data = await res.json()
-    console.log('Usuario recibido en login:', data.usuario)
 
     if (!res.ok) {
       throw new Error(data.error || 'Error de inicio de sesión')
@@ -78,9 +74,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setUsuario(data.usuario)
     setToken(data.token)
+
     const decoded = jwt.decode(data.token) as { exp: number }
     const expiraEn = decoded?.exp ? decoded.exp * 1000 : Date.now() + 86400000
-    console.log('Usuario que se guardará en localStorage:', data.usuario)
+
     localStorage.setItem(
       'auth',
       JSON.stringify({
@@ -90,8 +87,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       })
     )
 
-    if ('propietarioId' in data.usuario && data.usuario.propietarioId == null) {
+    if (data.usuario.propietarioId == null) {
       router.replace('/registro-propietario')
+    } else {
+      router.replace('/dashboard')
     }
   }
 
@@ -99,7 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('auth')
     setUsuario(null)
     setToken(null)
-    router.replace('/') 
+    router.replace('/')
   }
 
   const refrescarUsuario = async () => {
@@ -112,11 +111,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       })
       const data = await res.json()
       if (!res.ok) {
-        if (data.error === 'ROL_CAMBIADO') {
-          logout()
-          return
-        }
-        throw new Error(data.error || 'Error al refrescar usuario')
+        logout()
+        return
       }
 
       setUsuario(data.usuario)
@@ -136,15 +132,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.usuario.propietarioId == null && pathname !== '/registro-propietario') {
         router.replace('/registro-propietario')
       }
-
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Error al refrescar usuario:', error)
-      }
+      console.error('Error al refrescar usuario:', error)
     }
   }
 
-  
   return (
     <AuthContext.Provider
       value={{ usuario, token, login, logout, refrescarUsuario, autenticado: !!usuario }}
@@ -152,14 +144,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </AuthContext.Provider>
   )
-
-  
 }
+
 export const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider')
   return ctx
 }
-
-
-

@@ -18,8 +18,8 @@ model Usuario {
   activo          Boolean   @default(true)
   verificadoEmail Boolean   @default(false)
 
-propietario   Propietario? @relation("UsuarioAPropietario", fields: [propietarioId], references: [id])
-propietarioId Int?         @unique
+  propietario   Propietario? @relation("UsuarioAPropietario")
+  propietarioId Int?         @unique
 
   usuarioClinicas   UsuarioClinica[]
   accesos           Acceso[]
@@ -34,8 +34,8 @@ model Propietario {
   telefonoSecundario1 String?
   telefonoSecundario2 String?
 
-usuario   Usuario? @relation("UsuarioAPropietario")
-usuarioId Int?     @unique
+  usuarioId Int    @unique
+  usuario   Usuario @relation("UsuarioAPropietario", fields: [usuarioId], references: [id])
 }
 
 model Clinica {

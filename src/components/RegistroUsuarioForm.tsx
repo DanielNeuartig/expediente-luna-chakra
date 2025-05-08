@@ -14,12 +14,14 @@ import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { toaster } from '@/components/ui/toaster'
 import { MENSAJES, validarEmail } from '@/lib/validadores'
+import { useRouter } from 'next/navigation'
 
 const rolesList = [
   { label: 'Médico', value: 'MEDICO' },
   { label: 'Auxiliar', value: 'AUXILIAR' },
   { label: 'Propietario', value: 'PROPIETARIO' },
 ]
+
 
 const MotionBox = motion(Box)
 
