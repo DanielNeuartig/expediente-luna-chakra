@@ -18,12 +18,11 @@ model Usuario {
   activo          Boolean   @default(true)
   verificadoEmail Boolean   @default(false)
 
-  propietario       Propietario?       @relation(fields: [propietarioId], references: [id])
-  propietarioId     Int?               @unique
+propietario   Propietario? @relation("UsuarioAPropietario", fields: [propietarioId], references: [id])
+propietarioId Int?         @unique
 
   usuarioClinicas   UsuarioClinica[]
   accesos           Acceso[]
-  verificacionesSMS VerificacionSMS[]
 }
 
 model Propietario {
@@ -31,12 +30,12 @@ model Propietario {
   nombre   String
   creadoEn DateTime @default(now())
 
-  telefonoPrincipal   String
+  telefonoPrincipal   String  @unique
   telefonoSecundario1 String?
   telefonoSecundario2 String?
 
-  usuario   Usuario?
-  usuarioId Int?     @unique
+usuario   Usuario? @relation("UsuarioAPropietario")
+usuarioId Int?     @unique
 }
 
 model Clinica {
@@ -50,20 +49,7 @@ model Clinica {
   usuarioClinicas UsuarioClinica[]
 }
 
-model VerificacionSMS {
-  id               Int       @id @default(autoincrement())
-  telefono         String
-  codigo           String
-  usado            Boolean   @default(false)
-  creadoEn         DateTime  @default(now())
-  expiradoEn       DateTime
-  usuarioId        Int
-  intentosFallidos Int       @default(0)
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-
-  @@index([telefono, creadoEn])
-}
 
 model UsuarioClinica {
   id        Int @id @default(autoincrement())
@@ -78,11 +64,12 @@ model UsuarioClinica {
 
 model Acceso {
   id           Int         @id @default(autoincrement())
-usuarioId    Int?        // <- ahora es opcional
+  usuarioId    Int?       
   ip           String
   fecha        DateTime    @default(now())
   tipoAcceso   TipoAcceso
-
+  detalle      String?     // ← Aquí se guarda el SID de Twilio, si aplica
+userAgent    String?    
   usuario Usuario? @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId, tipoAcceso, fecha])
@@ -103,4 +90,5 @@ enum TipoAcceso {
   REGISTRO
   REGISTRO_PROPIETARIO
   SMS_DISPONIBILIDAD
+  GET_USUARIO_ACTUAL // ✅ agregado
 }

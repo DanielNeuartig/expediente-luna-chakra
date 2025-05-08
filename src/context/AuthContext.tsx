@@ -22,6 +22,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -142,6 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }
 
+  
   return (
     <AuthContext.Provider
       value={{ usuario, token, login, logout, refrescarUsuario, autenticado: !!usuario }}
@@ -149,10 +152,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </AuthContext.Provider>
   )
-}
 
+  
+}
 export const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider')
   return ctx
 }
+
+
+

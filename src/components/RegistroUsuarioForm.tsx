@@ -13,7 +13,7 @@ import {
 } from '@chakra-ui/react'
 import { useState, useMemo } from 'react'
 import { toaster } from '@/components/ui/toaster'
-import { MENSAJES, validarEmail } from '@/lib/validadores'
+import { MENSAJES } from '@/lib/validadores'
 
 const rolesList = [
   { label: 'Médico', value: 'MEDICO' },
@@ -41,10 +41,7 @@ export default function RegistroUsuario() {
       return
     }
 
-    if (!validarEmail(correo)) {
-      toaster.create({ description: MENSAJES.emailInvalido, type: 'error' })
-      return
-    }
+
 
     if (contrasena.length < 8) {
       toaster.create({ description: MENSAJES.contrasenaCorta, type: 'error' })

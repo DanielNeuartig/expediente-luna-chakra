@@ -1,17 +1,34 @@
 import { NextResponse } from 'next/server'
 import { MENSAJES } from '@/lib/validadores'
 import { verificarTokenYRolEnDB } from '@/lib/autenticacion/verificarTokenYRolEnDB'
-import { Twilio } from 'twilio'
+import { extraerToken } from '@/lib/autenticacion/extraerToken'
 import { prisma } from '@/lib/prisma'
+import { TipoAcceso } from '@prisma/client'
+import { Twilio } from 'twilio'
 
 const twilio = new Twilio(
   process.env.TWILIO_ACCOUNT_SID!,
   process.env.TWILIO_AUTH_TOKEN!
 )
 
+const MAX_INTENTOS = 3
+const TIEMPO_BLOQUEO_MS = 5 * 60 * 1000
+const IP_DESCONOCIDA = '0.0.0.0'
+
+function extraerParteLocal(numero: string): string {
+  const match = numero.match(/^\+(\d{1,4})(\d{10})$/)
+  return match?.[2] || ''
+}
+
+function esTelefonoValido(numero: string): boolean {
+  const limpio = numero.trim().replace(/[^+\d]/g, '')
+  const parteLocal = extraerParteLocal(limpio)
+  return /^\+\d{10,15}$/.test(limpio) && /^\d{10}$/.test(parteLocal)
+}
+
 export async function POST(req: Request) {
-  const token = req.headers.get('authorization')?.split(' ')[1]
-  if (!token) {
+  const token = extraerToken(req)
+  if (!token?.trim()) {
     return NextResponse.json({ error: MENSAJES.tokenFaltante }, { status: 401 })
   }
 
@@ -22,43 +39,43 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 401 })
   }
 
-  // 🔐 Obtener IP
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '0.0.0.0'
+  if (usuario.propietarioId) {
+    return NextResponse.json({ error: MENSAJES.yaTienePropietario }, { status: 409 })
+  }
 
-  // 📉 Limitar: máximo 3 intentos en 5 minutos desde la misma IP
-  const haceCincoMin = new Date(Date.now() - 5 * 60 * 1000)
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || IP_DESCONOCIDA
+  const userAgent = req.headers.get('user-agent') || 'NAVEGADOR_DESCONOCIDO'
+  const haceCincoMin = new Date(Date.now() - TIEMPO_BLOQUEO_MS)
+
   const intentos = await prisma.acceso.count({
     where: {
       usuarioId: usuario.id,
       ip,
       fecha: { gte: haceCincoMin },
-      tipoAcceso: 'SMS_ENVIO',
+      tipoAcceso: TipoAcceso.SMS_ENVIO,
     },
   })
 
-  if (intentos >= 3) {
-    return NextResponse.json({
-      error: 'Demasiadas solicitudes desde esta IP. Intenta más tarde.',
-    }, { status: 429 })
+  if (intentos >= MAX_INTENTOS) {
+    return NextResponse.json({ error: MENSAJES.demasiadosIntentos }, { status: 429 })
   }
 
-  // 📝 Registrar el intento inmediatamente
-  await prisma.acceso.create({
-    data: {
-      usuarioId: usuario.id,
-      ip,
-      tipoAcceso: 'SMS_ENVIO',
-    },
-  })
-
-  // ✅ Ahora sí: procesar y validar el teléfono
   const { telefono } = await req.json()
-  const telFormateado = telefono?.trim()
+  if (typeof telefono !== 'string') {
+    return NextResponse.json({ error: MENSAJES.telefonoInvalido }, { status: 400 })
+  }
+  console.log('🟡 [ENVIAR SMS] Teléfono recibido:', telefono)
+  const telFormateado = telefono.trim().replace(/[^+\d]/g, '')
+  console.log('🟡 [ENVIAR SMS] Teléfono formateado:', telFormateado)
+  const parteLocal = extraerParteLocal(telFormateado)
 
-  if (!telFormateado || !/^\+\d{10,15}$/.test(telFormateado)) {
-    return NextResponse.json({
-      error: 'Teléfono inválido. Usa formato internacional, por ejemplo: +521234567890.',
-    }, { status: 400 })
+  console.log('📥 Teléfono recibido del frontend:', telefono)
+  console.log('📞 Teléfono formateado:', telFormateado)
+  console.log('🔍 Parte local sin clave:', parteLocal)
+
+  if (!esTelefonoValido(telFormateado)) {
+    console.log('⛔ Teléfono no pasó validación:', telFormateado)
+    return NextResponse.json({ error: MENSAJES.telefonoInvalido }, { status: 400 })
   }
 
   const yaRegistrado = await prisma.propietario.findFirst({
@@ -70,52 +87,32 @@ export async function POST(req: Request) {
   })
 
   if (yaRegistrado) {
-    return NextResponse.json({
-      error: 'Este teléfono ya está registrado como principal por otro propietario',
-    }, { status: 409 })
-  }
-
-  const vigente = await prisma.verificacionSMS.findFirst({
-    where: {
-      usuarioId: usuario.id,
-      telefono: telFormateado,
-      usado: false,
-      expiradoEn: { gt: new Date() },
-    },
-    orderBy: { creadoEn: 'desc' },
-  })
-
-  if (vigente) {
-    return NextResponse.json({
-      success: true,
-      mensaje: 'Ya se envió un código recientemente',
-    })
+    return NextResponse.json({ error: MENSAJES.telefonoYaRegistrado }, { status: 409 })
   }
 
   try {
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiradoEn = new Date(Date.now() + 5 * 60 * 1000)
+    console.log('📤 Enviando a Twilio:', telFormateado)
+    const response = await twilio.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID!)
+      .verifications.create({
+        to: telFormateado,
+        channel: 'sms',
+      })
 
-    await prisma.verificacionSMS.create({
+    await prisma.acceso.create({
       data: {
-        telefono: telFormateado,
-        codigo,
-        expiradoEn,
         usuarioId: usuario.id,
+        ip,
+        tipoAcceso: TipoAcceso.SMS_ENVIO,
+        detalle: response.sid,
+        userAgent,
       },
     })
 
-    const mensaje = await twilio.messages.create({
-      to: telFormateado,
-      from: process.env.TWILIO_PHONE_NUMBER!,
-      body: `Tu código de verificación es: ${codigo}`,
-    })
-
-    return NextResponse.json({ success: true, sid: mensaje.sid })
+    return NextResponse.json({ success: true, sid: response.sid })
   } catch (error: any) {
     if (process.env.NODE_ENV !== 'production') {
-      console.error('Error al enviar SMS:', error)
+      console.error('❌ Error al enviar SMS con Twilio:', error?.message)
     }
-    return NextResponse.json({ error: 'No se pudo enviar el SMS' }, { status: 500 })
+    return NextResponse.json({ error: MENSAJES.falloEnvioSMS }, { status: 500 })
   }
 }

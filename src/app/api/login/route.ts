@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { validarEmail, MENSAJES } from '@/lib/validadores'
+import { MENSAJES } from '@/lib/validadores'
+import { TipoAcceso } from '@prisma/client'
 
 export async function POST(req: Request) {
   try {
@@ -12,12 +13,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: MENSAJES.camposIncompletos }, { status: 400 })
     }
 
-    if (!validarEmail(correo)) {
-      return NextResponse.json({ error: MENSAJES.emailInvalido }, { status: 400 })
-    }
+    const correoNormalizado = correo.trim().toLowerCase()
 
     const usuario = await prisma.usuario.findUnique({
-      where: { correo },
+      where: { correo: correoNormalizado },
       select: {
         id: true,
         rol: true,
@@ -37,28 +36,28 @@ export async function POST(req: Request) {
     }
 
     const esValido = await bcrypt.compare(contrasena, usuario.contraseña)
-
     if (!esValido) {
       return NextResponse.json({ error: MENSAJES.contrasenaIncorrecta }, { status: 401 })
     }
 
-    // Registrar IP del acceso
     const ip =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'IP_DESCONOCIDA'
+    const userAgent = req.headers.get('user-agent') || 'NAVEGADOR_DESCONOCIDO'
 
-      await prisma.acceso.create({
-        data: {
-          usuarioId: usuario.id,
-          ip: ip.toString(),
-          tipoAcceso: 'LOGIN',
-        },
-      })
+    await prisma.acceso.create({
+      data: {
+        usuarioId: usuario.id,
+        ip,
+        userAgent,
+        tipoAcceso: TipoAcceso.LOGIN,
+      },
+    })
 
     const token = jwt.sign(
       { id: usuario.id, rol: usuario.rol },
-      process.env.JWT_SECRET as string,
+      process.env.JWT_SECRET ?? 'SECRET',
       { expiresIn: '1d' }
     )
 
@@ -71,6 +70,7 @@ export async function POST(req: Request) {
         correo: usuario.correo,
       },
     })
+
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Error en /api/login:', error)
