@@ -2,7 +2,6 @@
 
 import {
   Box,
-  Input,
   Text,
   Button,
   VStack,
@@ -15,13 +14,14 @@ import { motion } from 'framer-motion'
 import { toaster } from '@/components/ui/toaster'
 import { MENSAJES, validarEmail } from '@/lib/validadores'
 import { useRouter } from 'next/navigation'
+import InputCorreo from '@/components/InputCorreo'
+import InputContrasena from '@/components/InputContrasena'
 
 const rolesList = [
   { label: 'Médico', value: 'MEDICO' },
   { label: 'Auxiliar', value: 'AUXILIAR' },
   { label: 'Propietario', value: 'PROPIETARIO' },
 ]
-
 
 const MotionBox = motion(Box)
 
@@ -32,6 +32,7 @@ export default function RegistroUsuarioForm() {
   const [rol, setRol] = useState<string>('')
   const [cargando, setCargando] = useState(false)
   const [shake, setShake] = useState(false)
+  const router = useRouter()
 
   const collection = useMemo(() => {
     return createListCollection({
@@ -93,7 +94,6 @@ export default function RegistroUsuarioForm() {
       })
 
       const data = await res.json()
-
       if (!res.ok) {
         shakeAnim()
         const mensaje = Object.values(MENSAJES).includes(data.error)
@@ -137,38 +137,28 @@ export default function RegistroUsuarioForm() {
       boxShadow="md"
     >
       <VStack gap={6}>
-        <Box w="full">
-          <Text mb={1} fontWeight="medium">Correo electrónico</Text>
-          <Input
-            type="email"
-            value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="correo@ejemplo.com"
-          />
-        </Box>
+        <InputCorreo
+          correo={correo}
+          setCorreo={setCorreo}
+          onEnter={handleSubmit}
+          disabled={cargando}
+        />
 
-        <Box w="full">
-          <Text mb={1} fontWeight="medium">Contraseña</Text>
-          <Input
-            type="password"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="********"
-          />
-        </Box>
+        <InputContrasena
+          contrasena={contrasena}
+          setContrasena={setContrasena}
+          onEnter={handleSubmit}
+          disabled={cargando}
+        />
 
-        <Box w="full">
-          <Text mb={1} fontWeight="medium">Confirmar contraseña</Text>
-          <Input
-            type="password"
-            value={confirmar}
-            onChange={(e) => setConfirmar(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="********"
-          />
-        </Box>
+        <InputContrasena
+          contrasena={confirmar}
+          setContrasena={setConfirmar}
+          compararContra={contrasena}
+          modoConfirmar
+          onEnter={handleSubmit}
+          disabled={cargando}
+        />
 
         <Box w="full">
           <Text mb={1} fontWeight="medium">Rol</Text>
@@ -185,7 +175,16 @@ export default function RegistroUsuarioForm() {
             size="sm"
           >
             <Select.HiddenSelect />
-            <Select.Control>
+            <Select.Control
+              style={
+                rol === ''
+                  ? {
+                     // borderColor: '#E53E3E',
+                      //boxShadow: '0 0 0 1px var(--chakra-colors-red-500)',
+                    }
+                  : {}
+              }
+            >
               <Select.Trigger>
                 <Select.ValueText placeholder="Selecciona un rol" />
               </Select.Trigger>

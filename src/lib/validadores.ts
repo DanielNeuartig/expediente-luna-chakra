@@ -11,7 +11,7 @@ export const MENSAJES = {
   contrasenasNoCoinciden: 'Las contraseñas no coinciden', // ✅ añadido
   propietarioNoRegistrado: 'Tu cuenta aún no tiene un perfil de propietario registrado.',
   usuarioInactivo: 'Este usuario está inactivo. Contacta con el administrador.',
-  usuarioNoExiste: 'No existe un usuario con ese correo',
+  usuarioNoExiste: 'No existe un usuario con ese correo o teléfono',
   contrasenaIncorrecta: 'Contraseña incorrecta',
   usuarioYaExiste: 'Este correo ya está registrado', // ✅ añadido
   rolInvalido: 'Rol no permitido',

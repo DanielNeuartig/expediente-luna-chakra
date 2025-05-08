@@ -23,6 +23,8 @@ model Usuario {
 
   usuarioClinicas   UsuarioClinica[]
   accesos           Acceso[]
+
+    propietariosCreados Propietario[] @relation("UsuarioCreoPropietario")
 }
 
 model Propietario {
@@ -36,6 +38,9 @@ model Propietario {
 
   usuarioId Int    @unique
   usuario   Usuario @relation("UsuarioAPropietario", fields: [usuarioId], references: [id])
+
+creadoPor   Usuario? @relation("UsuarioCreoPropietario", fields: [creadoPorId], references: [id])
+creadoPorId Int?
 }
 
 model Clinica {

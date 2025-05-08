@@ -148,6 +148,7 @@ console.log('🟡!! [REGISTRO] Código ingresado:', codigo.trim())
           telefonoSecundario1: telSec1,
           telefonoSecundario2: telSec2,
           usuario: { connect: { id: usuario.id } },
+          creadoPor: { connect: { id: usuario.id } }
         },
       })
 

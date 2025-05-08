@@ -7,13 +7,14 @@ import {
   Text,
   VStack,
   Separator,
-  HStack,
 } from "@chakra-ui/react"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/context/AuthContext'
+import InputTelefonoConClave from '@/components/InputTelefonoConClave'
+import InputNombrePropietario from '@/components/InputNombrePropietario'
 import {
   MENSAJES,
   esTelefonoValido,
@@ -22,11 +23,16 @@ import {
 
 const MotionBox = motion(Box)
 
-
-
 export default function RegistroPropietario() {
   const router = useRouter()
   const { usuario, logout, refrescarUsuario } = useAuth()
+
+  useEffect(() => {
+    if (usuario?.propietarioId) {
+      router.replace('/dashboard')
+    }
+  }, [usuario, router])
+
   const [nombre, setNombre] = useState("")
   const [clavePais, setClavePais] = useState("+52")
   const [telefonoPrincipal, setTelefonoPrincipal] = useState("")
@@ -37,12 +43,6 @@ export default function RegistroPropietario() {
   const [cargando, setCargando] = useState(false)
   const [exito, setExito] = useState(false)
   const [shake, setShake] = useState(false)
-
-  const formatearNombre = (valor: string) =>
-    valor
-      .toLowerCase()
-      .replace(/[^a-záéíóúñ\s]/gi, "")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
 
   const telefonoCompleto = () => {
     const clave = clavePais.trim()
@@ -72,11 +72,7 @@ export default function RegistroPropietario() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${
-            localStorage.getItem("auth")
-              ? JSON.parse(localStorage.getItem("auth")!).token
-              : ""
-          }`,
+          Authorization: `Bearer ${localStorage.getItem("auth") ? JSON.parse(localStorage.getItem("auth")!).token : ""}`,
         },
         body: JSON.stringify({ telefono: completo }),
       })
@@ -104,9 +100,7 @@ export default function RegistroPropietario() {
       return
     }
 
-    const token = localStorage.getItem("auth")
-      ? JSON.parse(localStorage.getItem("auth")!).token
-      : ""
+    const token = localStorage.getItem("auth") ? JSON.parse(localStorage.getItem("auth")!).token : ""
 
     const payload = {
       nombre: nombre.trim(),
@@ -128,12 +122,11 @@ export default function RegistroPropietario() {
       })
 
       const data = await res.json()
-      if (!res.ok)
-        throw new Error(data.error || "Error al registrar propietario")
+      if (!res.ok) throw new Error(data.error || "Error al registrar propietario")
 
       toaster.create({ description: "Registro exitoso", type: "success" })
       await refrescarUsuario()
-router.push('/dashboard')
+      router.push('/dashboard')
       setExito(true)
       setTimeout(() => {
         setNombre("")
@@ -181,43 +174,33 @@ router.push('/dashboard')
                 </Text>
               </Box>
 
-              <Box>
-                <Text mb={1}>Nombre completo</Text>
-                <Input
-                  value={nombre}
-                  onChange={(e) => setNombre(formatearNombre(e.target.value))}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                  placeholder="Nombre y apellido"
-                />
-              </Box>
+              <InputNombrePropietario
+                nombre={nombre}
+                setNombre={setNombre}
+                onEnter={handleSubmit}
+                disabled={cargando}
+              />
 
               <Box>
                 <Text mb={1}>Teléfono principal</Text>
-                <HStack>
-                  <Input
-                    maxW="30%"
-                    value={clavePais}
-                    onChange={(e) => setClavePais(e.target.value)}
-                    placeholder="+52"
-                  />
-                  <Input
-                    flex="1"
-                    value={telefonoPrincipal}
-                    onChange={(e) =>
-                      setTelefonoPrincipal(formatearTelefonoVisual(e.target.value))
-                    }
-                    placeholder="33 33 33 33 33"
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={enviarCodigo}
-                    loading={enviandoCodigo}
-                    disabled={enviandoCodigo}
-                  >
-                    Enviar código
-                  </Button>
-                </HStack>
+                <InputTelefonoConClave
+                  clavePais={clavePais}
+                  setClavePais={setClavePais}
+                  telefono={telefonoPrincipal}
+                  setTelefono={setTelefonoPrincipal}
+                  onEnter={handleSubmit}
+                  disabled={cargando || enviandoCodigo}
+                  loading={cargando || enviandoCodigo}
+                />
+                <Button
+                  mt={2}
+                  size="sm"
+                  onClick={enviarCodigo}
+                  loading={enviandoCodigo}
+                  disabled={enviandoCodigo}
+                >
+                  Enviar código
+                </Button>
               </Box>
 
               <Box>
@@ -234,9 +217,7 @@ router.push('/dashboard')
                 <Text mb={1}>Teléfono secundario 1 (opcional)</Text>
                 <Input
                   value={telefonoSecundario1}
-                  onChange={(e) =>
-                    setTelefonoSecundario1(formatearTelefonoVisual(e.target.value))
-                  }
+                  onChange={(e) => setTelefonoSecundario1(formatearTelefonoVisual(e.target.value))}
                   placeholder="33 33 33 33 33"
                 />
               </Box>
@@ -245,9 +226,7 @@ router.push('/dashboard')
                 <Text mb={1}>Teléfono secundario 2 (opcional)</Text>
                 <Input
                   value={telefonoSecundario2}
-                  onChange={(e) =>
-                    setTelefonoSecundario2(formatearTelefonoVisual(e.target.value))
-                  }
+                  onChange={(e) => setTelefonoSecundario2(formatearTelefonoVisual(e.target.value))}
                   placeholder="33 33 33 33 33"
                 />
               </Box>

@@ -3,10 +3,8 @@
 import {
   Box,
   Text,
-  Input,
   Button,
   VStack,
-  HStack,
   Flex,
 } from '@chakra-ui/react'
 import { useState } from 'react'
@@ -17,9 +15,11 @@ import { useAuth } from '@/context/AuthContext'
 import {
   MENSAJES,
   validarEmail,
-  formatearTelefonoVisual,
   esTelefonoValido,
 } from '@/lib/validadores'
+import InputTelefonoConClave from '@/components/InputTelefonoConClave'
+import InputCorreo from '@/components/InputCorreo'
+import InputContrasena from '@/components/InputContrasena'
 
 const MotionBox = motion(Box)
 
@@ -80,20 +80,19 @@ export default function LoginForm() {
       await login(identificador, contrasena)
       toaster.create({ description: MENSAJES.inicioSesionExitoso, type: 'success' })
       router.push('/dashboard')
-
     } catch (err: any) {
-  setShake(true)
-  setTimeout(() => setShake(false), 600)
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
 
-  const esErrorDeRed = err instanceof TypeError && err.message === 'Failed to fetch'
-  const mensaje = esErrorDeRed
-    ? MENSAJES.errorConexion
-    : Object.values(MENSAJES).includes(err.message)
-      ? err.message
-      : MENSAJES.errorInterno
+      const esErrorDeRed = err instanceof TypeError && err.message === 'Failed to fetch'
+      const mensaje = esErrorDeRed
+        ? MENSAJES.errorConexion
+        : Object.values(MENSAJES).includes(err.message)
+          ? err.message
+          : MENSAJES.errorInterno
 
-  toaster.create({ description: mensaje, type: 'error' })
-}finally {
+      toaster.create({ description: mensaje, type: 'error' })
+    } finally {
       setCargando(false)
     }
   }
@@ -134,50 +133,32 @@ export default function LoginForm() {
         </Flex>
 
         {modo === 'correo' ? (
-          <Box width="100%">
-            <Text mb={1} fontWeight="medium">Correo electrónico</Text>
-            <Input
-              type="email"
-              autoComplete="username"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="correo@ejemplo.com"
-            />
-          </Box>
+          <InputCorreo
+            correo={correo}
+            setCorreo={setCorreo}
+            onEnter={handleSubmit}
+            disabled={cargando}
+          />
         ) : (
           <Box width="100%">
             <Text mb={1} fontWeight="medium">Teléfono</Text>
-            <HStack>
-              <Input
-                maxW="30%"
-                value={clave}
-                onChange={(e) => setClave(e.target.value)}
-                placeholder="+52"
-              />
-              <Input
-                type="tel"
-                autoComplete="username"
-                value={telefono}
-                onChange={(e) => setTelefono(formatearTelefonoVisual(e.target.value))}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder="33 33 33 33 33"
-              />
-            </HStack>
+            <InputTelefonoConClave
+              clavePais={clave}
+              setClavePais={setClave}
+              telefono={telefono}
+              setTelefono={setTelefono}
+              onEnter={handleSubmit}
+              disabled={cargando}
+            />
           </Box>
         )}
 
-        <Box width="100%">
-          <Text mb={1} fontWeight="medium">Contraseña</Text>
-          <Input
-            type="password"
-            autoComplete="current-password"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="********"
-          />
-        </Box>
+        <InputContrasena
+          contrasena={contrasena}
+          setContrasena={setContrasena}
+          onEnter={handleSubmit}
+          disabled={cargando}
+        />
 
         <Button
           colorScheme="teal"
