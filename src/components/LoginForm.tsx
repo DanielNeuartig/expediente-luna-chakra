@@ -11,9 +11,17 @@ import {
 } from '@chakra-ui/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/context/AuthContext'
-import { MENSAJES } from '@/lib/validadores'
+import {
+  MENSAJES,
+  validarEmail,
+  formatearTelefonoVisual,
+  esTelefonoValido,
+} from '@/lib/validadores'
+
+const MotionBox = motion(Box)
 
 export default function LoginForm() {
   const [modo, setModo] = useState<'correo' | 'telefono'>('correo')
@@ -22,24 +30,46 @@ export default function LoginForm() {
   const [telefono, setTelefono] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [shake, setShake] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
 
-  const handleSubmit = async () => {
-    const identificador =
-      modo === 'correo' ? correo.trim() : `${clave.trim()}${telefono.trim()}`
+  const telSinEspacios = telefono.replace(/\D/g, '')
+  const identificador =
+    modo === 'correo'
+      ? correo.trim().toLowerCase()
+      : `${clave.trim()}${telSinEspacios}`
 
+  const esFormularioValido =
+    modo === 'correo'
+      ? validarEmail(correo) && contrasena.length >= 8
+      : esTelefonoValido(identificador) && contrasena.length >= 8
+
+  const handleSubmit = async () => {
     if (!identificador || !contrasena) {
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
       toaster.create({ description: MENSAJES.camposIncompletos, type: 'error' })
       return
     }
 
-    if (modo === 'telefono' && !/^\+\d{1,4}\d{10}$/.test(identificador)) {
+    if (modo === 'correo' && !validarEmail(correo)) {
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
+      toaster.create({ description: MENSAJES.emailInvalido, type: 'error' })
+      return
+    }
+
+    if (modo === 'telefono' && !esTelefonoValido(identificador)) {
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
       toaster.create({ description: MENSAJES.telefonoInvalido, type: 'error' })
       return
     }
 
     if (contrasena.length < 8) {
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
       toaster.create({ description: MENSAJES.contrasenaCorta, type: 'error' })
       return
     }
@@ -50,32 +80,53 @@ export default function LoginForm() {
       await login(identificador, contrasena)
       toaster.create({ description: MENSAJES.inicioSesionExitoso, type: 'success' })
       router.push('/dashboard')
-    } catch (err: any) {
-      const esErrorDeRed = err instanceof TypeError && err.message === 'Failed to fetch'
-      const mensaje = esErrorDeRed
-        ? MENSAJES.errorConexion
-        : Object.values(MENSAJES).includes(err.message)
-          ? err.message
-          : MENSAJES.errorInterno
 
-      toaster.create({ description: mensaje, type: 'error' })
-    } finally {
+    } catch (err: any) {
+  setShake(true)
+  setTimeout(() => setShake(false), 600)
+
+  const esErrorDeRed = err instanceof TypeError && err.message === 'Failed to fetch'
+  const mensaje = esErrorDeRed
+    ? MENSAJES.errorConexion
+    : Object.values(MENSAJES).includes(err.message)
+      ? err.message
+      : MENSAJES.errorInterno
+
+  toaster.create({ description: mensaje, type: 'error' })
+}finally {
       setCargando(false)
     }
   }
 
   return (
-    <Box maxW="sm" mx="auto" mt={10} p={6} borderWidth={1} borderRadius="xl" boxShadow="md">
+    <MotionBox
+      animate={{
+        ...(shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : {}),
+        opacity: 1,
+        y: 0,
+      }}
+      initial={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.4 }}
+      maxW="sm"
+      mx="auto"
+      mt={10}
+      p={6}
+      borderWidth={1}
+      borderRadius="xl"
+      boxShadow="md"
+    >
       <VStack>
-        <Flex justify="space-between" width="100%">
+        <Flex justify="space-between" width="100%" mb={4}>
           <Button
             variant={modo === 'correo' ? 'solid' : 'outline'}
+            colorScheme={modo === 'correo' ? 'teal' : undefined}
             onClick={() => setModo('correo')}
           >
             Correo
           </Button>
           <Button
             variant={modo === 'telefono' ? 'solid' : 'outline'}
+            colorScheme={modo === 'telefono' ? 'teal' : undefined}
             onClick={() => setModo('telefono')}
           >
             Teléfono
@@ -108,9 +159,9 @@ export default function LoginForm() {
                 type="tel"
                 autoComplete="username"
                 value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
+                onChange={(e) => setTelefono(formatearTelefonoVisual(e.target.value))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder="1234567890"
+                placeholder="33 33 33 33 33"
               />
             </HStack>
           </Box>
@@ -133,12 +184,13 @@ export default function LoginForm() {
           onClick={handleSubmit}
           loading={cargando}
           loadingText="Iniciando..."
-          disabled={cargando}
+          disabled={cargando || !esFormularioValido}
           width="full"
+          mt={4}
         >
           Iniciar sesión
         </Button>
       </VStack>
-    </Box>
+    </MotionBox>
   )
 }

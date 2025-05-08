@@ -9,6 +9,7 @@ const ROLES_VALIDOS: Rol[] = ['MEDICO', 'AUXILIAR', 'PROPIETARIO']
 export async function POST(req: Request) {
   try {
     const { correo, contrasena, confirmar, rol } = await req.json()
+    console.log('📥 Datos recibidos en /api/registro:', { correo, contrasena, confirmar, rol })
 
     if (!correo || !contrasena || !confirmar || !rol) {
       return NextResponse.json({ error: MENSAJES.camposIncompletos }, { status: 400 })

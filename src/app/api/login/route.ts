@@ -2,21 +2,27 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { MENSAJES } from '@/lib/validadores'
+import { MENSAJES, esTelefonoValido } from '@/lib/validadores'
 import { TipoAcceso } from '@prisma/client'
 
 export async function POST(req: Request) {
   try {
     const { correo, contrasena } = await req.json()
+    console.log('📥 Datos recibidos en /api/login:', { correo, contrasena })
 
     if (!correo || !contrasena) {
       return NextResponse.json({ error: MENSAJES.camposIncompletos }, { status: 400 })
     }
 
-    const correoNormalizado = correo.trim().toLowerCase()
+    const identificador = correo.trim().toLowerCase()
 
-    const usuario = await prisma.usuario.findUnique({
-      where: { correo: correoNormalizado },
+    const usuario = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { correo: identificador },
+          { propietario: { telefonoPrincipal: identificador } },
+        ],
+      },
       select: {
         id: true,
         rol: true,
@@ -33,6 +39,10 @@ export async function POST(req: Request) {
 
     if (!usuario.activo) {
       return NextResponse.json({ error: MENSAJES.usuarioInactivo }, { status: 403 })
+    }
+
+    if (identificador.startsWith('+') && !esTelefonoValido(identificador)) {
+      return NextResponse.json({ error: MENSAJES.telefonoInvalido }, { status: 400 })
     }
 
     const esValido = await bcrypt.compare(contrasena, usuario.contraseña)
@@ -70,7 +80,6 @@ export async function POST(req: Request) {
         correo: usuario.correo,
       },
     })
-
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Error en /api/login:', error)
