@@ -1,39 +1,27 @@
-'use client'
+"use client"
 
+import Link from "next/link"
+import { LuLogOut, LuLayoutDashboard } from "react-icons/lu"
 import {
   Box,
+  Button,
   Flex,
+  Icon,
+  Stack,
   Text,
-  IconButton,
-  VStack,
-  Link as ChakraLink,
-} from '@chakra-ui/react'
-import { LuLogOut, LuLayoutDashboard } from 'react-icons/lu'
-import { useAuth } from '@/context/AuthContext'
-//import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
-
-const MotionBox = motion(Box)
+} from "@chakra-ui/react"
+import { useAuth } from "@/context/AuthContext"
 
 export default function DashboardPage() {
   const { usuario, logout } = useAuth()
-  //const router = useRouter()
-  const [visible/*, setVisible*/] = useState(true)
-
-  /*const handleLogout = () => {
-    setVisible(false)
-    setTimeout(() => logout(), 400)
-  }*/
 
   const menu = [
     {
-      label: 'Inicio',
-      href: '/dashboard',
-      icon: <LuLayoutDashboard />,
-      roles: ['CEO', 'ADMIN', 'MEDICO', 'AUXILIAR'],
+      label: "Inicio",
+      href: "/dashboard",
+      icon: LuLayoutDashboard,
+      roles: ["CEO", "ADMIN", "MEDICO", "AUXILIAR"],
     },
-    // Agrega más secciones según el rol...
   ]
 
   const seccionesVisibles = menu.filter((item) =>
@@ -41,73 +29,49 @@ export default function DashboardPage() {
   )
 
   return (
-<Flex h="100vh" w="100vw" overflowX="hidden">
+    <Flex h="100dvh">
       {/* Sidebar */}
-      <Box
-        w="150px"
-        bg="gray.900"
-        p={4}
-        boxShadow="md"
-        borderRight="1px solid"
-        borderColor="gray.100"
-      >
-        <Text fontSize="xl" fontWeight="bold" mb={6} color="white">
-          Menú
+      <Box w="200px" bg="gray.800" p={4} color="white">
+        <Text fontSize="lg" fontWeight="bold" mb={6}>
+          Expediente Luna
         </Text>
-        <VStack align="start">
+        <Stack w="full" align="stretch" gap={2}>
           {seccionesVisibles.map((item) => (
-            <ChakraLink
-              key={item.href}
-              href={item.href}
-              px={3}
-              py={2}
-              rounded="md"
-              _hover={{ bg: 'gray.300' }}
-              display="flex"
-              alignItems="center"
-              gap={2}
-            >
-              {item.icon}
-              <Text>{item.label}</Text>
-            </ChakraLink>
+            <Link key={item.href} href={item.href}>
+              <Button
+                justifyContent="start"
+                colorScheme="gray"
+                variant="ghost"
+                w="full"
+              >
+                <Icon as={item.icon} mr={2} />
+                {item.label}
+              </Button>
+            </Link>
           ))}
-        </VStack>
+          <Button
+            aria-label="Cerrar sesión"
+            colorScheme="red"
+            variant="ghost"
+            onClick={logout}
+            w="full"
+            justifyContent="start"
+          >
+            <Icon as={LuLogOut} mr={2} />
+            Cerrar sesión
+          </Button>
+        </Stack>
       </Box>
 
-      {/* Main */}
-      <AnimatePresence>
-        {visible && (
-          <MotionBox
-            flex="1"
-            p={8}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Flex justify="space-between" align="center" mb={6}>
-              <Box>
-                <Text fontSize="2xl" fontWeight="bold">
-                  Bienvenido al panel
-                </Text>
-                <Text color="gray.600">
-                  {usuario?.correo} ({usuario?.rol})
-                </Text>
-              </Box>
-              <IconButton
-  aria-label="Cerrar sesión"
-  variant="ghost"
-  colorScheme="red"
-  onClick={logout}
->
-  <LuLogOut />
-</IconButton>
-            </Flex>
-
-            <Text>Selecciona una sección del menú para comenzar.</Text>
-          </MotionBox>
-        )}
-      </AnimatePresence>
+      {/* Main content */}
+      <Box flex="1" p={8}>
+        <Text fontSize="2xl" fontWeight="bold" mb={4}>
+          Bienvenido al panel
+        </Text>
+        <Text color="gray.600">
+          {usuario?.correo} ({usuario?.rol})
+        </Text>
+      </Box>
     </Flex>
   )
 }
