@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import jwt from 'jsonwebtoken'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+  const intervaloRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('auth')
@@ -53,10 +54,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!token) return
-    const intervalo = setInterval(() => {
+    intervaloRef.current = setInterval(() => {
       refrescarUsuario()
     }, 60000)
-    return () => clearInterval(intervalo)
+    return () => {
+      if (intervaloRef.current) clearInterval(intervaloRef.current)
+    }
   }, [token])
 
   const login = async (correo: string, contrasena: string) => {
@@ -98,7 +101,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('auth')
     setUsuario(null)
     setToken(null)
-    router.replace('/')
+
+    if (intervaloRef.current) {
+      clearInterval(intervaloRef.current)
+    }
+
+    try {
+      if (pathname !== '/') {
+        router.replace('/')
+      }
+    } catch (err) {
+      console.error('Error al redirigir durante logout:', err)
+    }
   }
 
   const refrescarUsuario = async () => {
@@ -115,7 +129,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return
       }
 
-      setUsuario(data.usuario)
+      if (
+        !usuario ||
+        usuario.id !== data.usuario.id ||
+        usuario.rol !== data.usuario.rol ||
+        usuario.correo !== data.usuario.correo ||
+        usuario.propietarioId !== data.usuario.propietarioId
+      ) {
+        setUsuario(data.usuario)
+      }
+
       const stored = localStorage.getItem('auth')
       const parsed = stored ? JSON.parse(stored) : {}
       const expiraEn = parsed.expiraEn || Date.now() + 86400000
