@@ -11,7 +11,7 @@ const MotionBox = motion(Box)
 export default function DashboardPage() {
   const { logout } = useAuth()
   const [visible, setVisible] = useState(true)
-  const { usuario, autenticado } = useAuth()
+  const { usuario } = useAuth()
 
 const handleLogout = () => {
   logout()            // cierra sesión y redirige
