@@ -1,3 +1,5 @@
+// src/app/api/usuario/route.ts
+
 import { NextResponse } from 'next/server'
 import { MENSAJES } from '@/lib/validadores'
 import { verificarTokenYRolEnDB } from '@/lib/autenticacion/verificarTokenYRolEnDB'
@@ -28,20 +30,32 @@ export async function GET(req: Request) {
       },
     })
 
+    const propietario = usuario.propietarioId
+      ? await prisma.propietario.findUnique({
+          where: { id: usuario.propietarioId },
+          select: {
+            id: true,
+            nombre: true,
+            telefonoPrincipal: true,
+          },
+        })
+      : null
+
     return NextResponse.json({
       usuario: {
         id: usuario.id,
         rol: usuario.rol,
         correo: usuario.correo,
         propietarioId: usuario.propietarioId,
+        propietario, // ✅ se incluye dentro del objeto usuario
       },
     })
   } catch (err: unknown) {
-  const mensaje =
-    err instanceof Error && err.message === 'USUARIO_NO_ENCONTRADO'
-      ? MENSAJES.usuarioNoExiste
-      : MENSAJES.tokenInvalido
+    const mensaje =
+      err instanceof Error && err.message === 'USUARIO_NO_ENCONTRADO'
+        ? MENSAJES.usuarioNoExiste
+        : MENSAJES.tokenInvalido
 
-  return NextResponse.json({ error: mensaje }, { status: 401 })
-}
+    return NextResponse.json({ error: mensaje }, { status: 401 })
+  }
 }

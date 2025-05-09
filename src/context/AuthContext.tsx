@@ -39,11 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUsuario(null)
     setToken(null)
     if (intervaloRef.current) clearInterval(intervaloRef.current)
-    try {
-      if (pathname !== '/') router.replace('/')
-    } catch (err) {
-      console.error('Error al redirigir durante logout:', err)
-    }
+    if (pathname !== '/') router.replace('/')
   }, [pathname, router])
 
   const refrescarUsuario = useCallback(async () => {
@@ -59,19 +55,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const usuarioActualizado: Usuario = {
-        ...data.usuario,
-        propietario: data.propietario ?? undefined,
+        id: data.usuario.id,
+        rol: data.usuario.rol,
+        correo: data.usuario.correo,
+        propietarioId: data.usuario.propietarioId,
+        propietario: data.usuario.propietario ?? undefined,
       }
 
-      if (
-        !usuario ||
-        usuario.id !== usuarioActualizado.id ||
-        usuario.rol !== usuarioActualizado.rol ||
-        usuario.correo !== usuarioActualizado.correo ||
-        usuario.propietarioId !== usuarioActualizado.propietarioId
-      ) {
-        setUsuario(usuarioActualizado)
-      }
+      setUsuario(usuarioActualizado)
 
       const stored = localStorage.getItem('auth')
       const parsed = stored ? JSON.parse(stored) : {}
@@ -92,7 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Error al refrescar usuario:', error)
     }
-  }, [token, usuario, pathname, logout, router])
+  }, [token, pathname, logout, router])
 
   useEffect(() => {
     const stored = localStorage.getItem('auth')
@@ -133,8 +124,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!res.ok) throw new Error(data.error || 'Error de inicio de sesión')
 
     const usuarioLogueado: Usuario = {
-      ...data.usuario,
-      propietario: data.propietario ?? undefined,
+      id: data.usuario.id,
+      rol: data.usuario.rol,
+      correo: data.usuario.correo,
+      propietarioId: data.usuario.propietarioId,
+      propietario: data.usuario.propietario ?? undefined,
     }
 
     setUsuario(usuarioLogueado)
