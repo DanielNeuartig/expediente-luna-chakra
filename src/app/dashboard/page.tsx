@@ -41,7 +41,7 @@ export default function DashboardPage() {
   )
 
   return (
-    <Flex h="100vh">
+<Flex h="100vh" w="100vw" overflowX="hidden">
       {/* Sidebar */}
       <Box
         w="150px"
