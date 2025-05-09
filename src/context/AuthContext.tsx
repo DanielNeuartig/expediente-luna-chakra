@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 'use client'
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
@@ -9,6 +10,10 @@ type Usuario = {
   rol: string
   correo: string
   propietarioId?: number | null
+  propietario?: {
+    nombre: string
+    telefonoPrincipal: string | null
+  }
 }
 
 type AuthContextType = {
@@ -53,14 +58,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return
       }
 
+      const usuarioActualizado: Usuario = {
+        ...data.usuario,
+        propietario: data.propietario ?? undefined,
+      }
+
       if (
         !usuario ||
-        usuario.id !== data.usuario.id ||
-        usuario.rol !== data.usuario.rol ||
-        usuario.correo !== data.usuario.correo ||
-        usuario.propietarioId !== data.usuario.propietarioId
+        usuario.id !== usuarioActualizado.id ||
+        usuario.rol !== usuarioActualizado.rol ||
+        usuario.correo !== usuarioActualizado.correo ||
+        usuario.propietarioId !== usuarioActualizado.propietarioId
       ) {
-        setUsuario(data.usuario)
+        setUsuario(usuarioActualizado)
       }
 
       const stored = localStorage.getItem('auth')
@@ -71,12 +81,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         'auth',
         JSON.stringify({
           token,
-          usuario: data.usuario,
+          usuario: usuarioActualizado,
           expiraEn,
         })
       )
 
-      if (data.usuario.propietarioId == null && pathname !== '/registro-propietario') {
+      if (usuarioActualizado.propietarioId == null && pathname !== '/registro-propietario') {
         router.replace('/registro-propietario')
       }
     } catch (error) {
@@ -122,7 +132,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Error de inicio de sesión')
 
-    setUsuario(data.usuario)
+    const usuarioLogueado: Usuario = {
+      ...data.usuario,
+      propietario: data.propietario ?? undefined,
+    }
+
+    setUsuario(usuarioLogueado)
     setToken(data.token)
 
     const decoded = jwt.decode(data.token) as { exp: number }
@@ -130,10 +145,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     localStorage.setItem(
       'auth',
-      JSON.stringify({ token: data.token, usuario: data.usuario, expiraEn })
+      JSON.stringify({ token: data.token, usuario: usuarioLogueado, expiraEn })
     )
 
-    if (data.usuario.propietarioId == null) {
+    if (usuarioLogueado.propietarioId == null) {
       router.replace('/registro-propietario')
     } else {
       router.replace('/dashboard')

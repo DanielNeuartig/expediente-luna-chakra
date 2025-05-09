@@ -1,7 +1,7 @@
 'use client'
 
-import { Box, Button, Icon, Link as ChakraLink, Text, VStack } from '@chakra-ui/react'
-import { LuLogOut, LuLayoutDashboard } from 'react-icons/lu'
+import { Box, Button, Icon, Text, VStack, Link } from '@chakra-ui/react'
+import { LuLogOut, LuLayoutDashboard, LuUser } from 'react-icons/lu'
 import NextLink from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 
@@ -21,7 +21,12 @@ export default function Sidebar({
       icon: LuLayoutDashboard,
       roles: ['CEO', 'ADMIN', 'MEDICO', 'AUXILIAR'],
     },
-    // Puedes agregar más rutas aquí según el rol
+    {
+      label: 'Mi perfil',
+      href: '/dashboard/usuario',
+      icon: LuUser,
+      roles: ['CEO', 'ADMIN', 'MEDICO', 'AUXILIAR', 'PROPIETARIO'],
+    },
   ]
 
   const seccionesVisibles = menu.filter((item) =>
@@ -32,12 +37,12 @@ export default function Sidebar({
     <Box
       as="nav"
       id="sidebar"
-      w={{ base: sidebarOpen ? '200px' : '0px', md: '200px' }}
+      w={{ base: '200px', md: '200px' }}
+      display={{ base: sidebarOpen ? 'block' : 'none', md: 'block' }}
       minW="0"
       bg="gray.800"
       color="white"
-      transition="width 0.3s"
-      overflow="hidden"
+      transition="all 0.3s"
       px={4}
       py={6}
       role="navigation"
@@ -57,23 +62,23 @@ export default function Sidebar({
 
       <VStack align="stretch" gap={2}>
         {seccionesVisibles.map((item) => (
-          <ChakraLink
+          <Link
             key={item.href}
             as={NextLink}
             href={item.href}
-            _hover={{ textDecoration: 'none' }}
+            style={{ textDecoration: 'none' }}
+            onClick={() => setSidebarOpen(false)}
           >
             <Button
               justifyContent="start"
               colorScheme="gray"
               variant="ghost"
               w="full"
-              onClick={() => setSidebarOpen(false)}
             >
               <Icon as={item.icon} mr={2} />
               {item.label}
             </Button>
-          </ChakraLink>
+          </Link>
         ))}
 
         <Button
